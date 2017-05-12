@@ -31,7 +31,7 @@
 #include <sys/stat.h>
 
 
-#ifdef __GLIBC__
+#if defined(__GLIBC__) && defined(__i386__)
 #  include <sys/perm.h>
 #endif
 
