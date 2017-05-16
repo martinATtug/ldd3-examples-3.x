@@ -25,6 +25,7 @@
 #include <linux/errno.h>    /* error codes */
 #include <linux/types.h>    /* size_t */
 #include <linux/mm.h>
+#include <linux/io.h>
 #include <linux/kdev_t.h>
 #include <asm/page.h>
 #include <linux/cdev.h>
@@ -83,10 +84,17 @@ static struct vm_operations_struct simple_remap_vm_ops = {
 
 static int simple_remap_mmap(struct file *filp, struct vm_area_struct *vma)
 {
+#if 0
+	resource_size_t physaddr = vma->vm_pgoff << PAGE_SHIFT ;
+	void *cached = memremap(physaddr, vma->vm_end - vma->vm_start, MEMREMAP_WB) ;
+	printk (KERN_NOTICE "mem_remap %#lx bytes @ phys 0x%p => virt 0x%p\n",
+			vma->vm_end - vma->vm_start, (void *)physaddr, cached) ;
+#endif
 	if (remap_pfn_range(vma, vma->vm_start, vma->vm_pgoff,
 			    vma->vm_end - vma->vm_start,
 			    vma->vm_page_prot))
 		return -EAGAIN;
+	printk (KERN_NOTICE "remap_pfn_range virt %#lx => phys %#lx\n", vma->vm_start, vma->vm_pgoff << PAGE_SHIFT) ;
 
 	vma->vm_ops = &simple_remap_vm_ops;
 	simple_vma_open(vma);
