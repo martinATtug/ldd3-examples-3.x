@@ -18,18 +18,24 @@
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
  */
 
+#define TIMEIT 1
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/mman.h>
 #include <errno.h>
 #include <limits.h>
+#include <time.h>
+#include <fcntl.h>
 
 int main(int argc, char **argv)
 {
     char *fname;
-    FILE *f;
+    int fd;
     unsigned long offset, len;
     void *address;
 
@@ -50,22 +56,28 @@ int main(int argc, char **argv)
 
     fname=argv[1];
 
-    if (!(f=fopen(fname,"r"))) {
+    if (-1 == (fd=open(fname, 0, O_RDONLY))) {
         fprintf(stderr, "%s: %s: %s\n", argv[0], fname, strerror(errno));
         exit(1);
     }
 
-    address=mmap(0, len, PROT_READ, MAP_FILE | MAP_PRIVATE, fileno(f), offset);
+    address=mmap(0, len, PROT_READ, MAP_FILE | MAP_PRIVATE, fd, offset);
 
     if (address == (void *)-1) {
         fprintf(stderr,"%s: mmap(): %s\n",argv[0],strerror(errno));
         exit(1);
     }
-    fclose(f);
+    close(fd);
     fprintf(stderr, "mapped \"%s\" from %lu (0x%08lx) to %lu (0x%08lx)\n",
             fname, offset, offset, offset+len, offset+len);
 
+    clock_t begin = clock();
     fwrite(address, 1, len, stdout);
+    clock_t end = clock();
+    double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+#if TIMEIT
+    fprintf(stderr, "writing took %g sec\n", time_spent);
+#endif
     return 0;
 }
         
